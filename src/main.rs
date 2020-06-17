@@ -50,6 +50,7 @@ impl GameState for State {
         let positions = self.ecs.read_storage::<Position>();
         let renderables = self.ecs.read_storage::<Renderable>();
         let map = self.ecs.fetch::<Map>();
+
         for (pos, render) in (&positions, &renderables).join() {
             let idx = map.xy_idx(pos.x, pos.y);
             if map.visible_tiles[idx] {
@@ -78,47 +79,6 @@ fn main() -> rltk::BError {
     let map: Map = Map::new_map_rooms_and_corridors();
     let (player_x, player_y) = map.rooms[0].center();
 
-    let mut rng = rltk::RandomNumberGenerator::new();
-    for (i, room) in map.rooms.iter().skip(1).enumerate() {
-        let (x, y) = room.center();
-
-        let glyph: rltk::FontCharType;
-        let fg: RGB;
-        let name: String;
-        let roll = rng.roll_dice(1, 2);
-        match roll {
-            1 => {
-                glyph = rltk::to_cp437('g');
-                fg = RGB::named(rltk::GREEN);
-                name = "Goblin".to_string();
-            }
-            _ => {
-                glyph = rltk::to_cp437('o');
-                fg = RGB::named(rltk::RED);
-                name = "Orc".to_string();
-            }
-        }
-
-        gs.ecs
-            .create_entity()
-            .with(Position { x, y })
-            .with(Renderable {
-                glyph: glyph,
-                fg: fg,
-                bg: RGB::named(rltk::BLACK),
-            })
-            .with(Monster {})
-            .with(Viewshed {
-                visible_tiles: Vec::new(),
-                range: 8,
-                dirty: true,
-            })
-            .with(Name {
-                name: format!("{} #{}", &name, i),
-            })
-            .build();
-    }
-
     gs.ecs
         .create_entity()
         .with(Position {
@@ -140,6 +100,47 @@ fn main() -> rltk::BError {
             name: "Player".to_string(),
         })
         .build();
+
+    let mut rng = rltk::RandomNumberGenerator::new();
+    for (i, room) in map.rooms.iter().skip(1).enumerate() {
+        let (x, y) = room.center();
+
+        let glyph: rltk::FontCharType;
+        let name: String;
+        let roll = rng.roll_dice(1, 2);
+        let fg: RGB;
+        match roll {
+            1 => {
+                glyph = rltk::to_cp437('g');
+                name = "Goblin".to_string();
+                fg = RGB::named(rltk::GREEN);
+            }
+            _ => {
+                glyph = rltk::to_cp437('o');
+                name = "Orc".to_string();
+                fg = RGB::named(rltk::RED);
+            }
+        }
+
+        gs.ecs
+            .create_entity()
+            .with(Position { x, y })
+            .with(Renderable {
+                glyph,
+                fg,
+                bg: RGB::named(rltk::BLACK),
+            })
+            .with(Viewshed {
+                visible_tiles: Vec::new(),
+                range: 8,
+                dirty: true,
+            })
+            .with(Monster {})
+            .with(Name {
+                name: format!("{} #{}", &name, i),
+            })
+            .build();
+    }
 
     gs.ecs.insert(map);
     gs.ecs.insert(Point::new(player_x, player_y));
